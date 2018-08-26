@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity(),
 
 
             // Create a new Fragment to be placed in the activity layout
+            // 
             bottomPlayer_Fragment = BottomPlayer()
             bottomPlayer_Fragment?.setArguments(intent.extras)
 
