@@ -13,7 +13,7 @@ import android.view.ViewGroup
 import com.example.a18mas.mp3front.MyItemRecyclerViewAdapter
 import com.example.a18mas.mp3front.R
 
-import com.example.a18mas.mp3front.models.SearchResult
+import com.example.a18mas.mp3front.data.model.SearchResult
 
 /**
  * A fragment representing a list of Items.

@@ -3,13 +3,12 @@ package com.example.a18mas.mp3front
 ///
 
 
-
 import android.net.Uri
 import android.os.Handler
 import android.util.Log
 import com.example.a18mas.mp3front.UI.myContext
 import com.example.a18mas.mp3front.helper.PlayerEventListener
-import com.example.a18mas.mp3front.helper.currentMeta
+//  import com.example.a18mas.mp3front.helper.currentMeta
 import com.example.a18mas.mp3front.helper.playerImpl
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -26,7 +25,7 @@ import com.google.android.exoplayer2.util.Util
 import kotlinx.coroutines.experimental.Runnable
 
 class MyExoPlayer {
-    var exoPlayer : ExoPlayer? = null
+    var exoPlayer: ExoPlayer? = null
     var mediaSource: MediaSource? = null
     var bandwidthMeter: BandwidthMeter? = null
     var audioTrackSelectionFactory: TrackSelection.Factory? = null
@@ -39,7 +38,6 @@ class MyExoPlayer {
     private var handler: Handler? = null
 
 
-
     fun setOnSetNewDataSourceEventListener(playerEventListener: PlayerEventListener) {
         this.playerEventListener = playerEventListener
     }
@@ -48,21 +46,33 @@ class MyExoPlayer {
     val eventHandler = object : Runnable {
         override fun run() {
             //  Log.i(TAG, "is_complete? ${getCurrentPos()} >= ${currentMeta?.durationseconds as Int * 1000}")
-            if (getCurrentPos() >= currentMeta?.duration_seconds as Int * 1000)
-                playerEventListener?.OnCompletion{}
+            //  if (getCurrentPos() >= currentMeta?.duration_seconds as Int * 1000)
+            if (isPlayedComplete())
+                playerEventListener?.OnCompletion {}
+            // # intern getDuration
+            //Log.i("DURATION_VS", "${playerImpl?.exoPlayer?.duration} VS. ${currentMeta?.duration_seconds}")
             handler?.postDelayed(this, 100)
 
         }
+
+        fun isPlayedComplete(): Boolean {
+            // removed 20180825/ Log.i("DURATION_VS", "${getCurrentPos()}/${getDuration()}  ")
+
+            if (getCurrentPos() > 0 && getDuration() > 0 && getCurrentPos() >= getDuration())
+                return true
+            return false
+        }
     }
+
 
     init {
         // 1.
         bandwidthMeter = DefaultBandwidthMeter()
         audioTrackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
-        trackSelector =  DefaultTrackSelector(audioTrackSelectionFactory)
+        trackSelector = DefaultTrackSelector(audioTrackSelectionFactory)
         exoPlayer = ExoPlayerFactory.newSimpleInstance(myContext, trackSelector)
         Log.i(TAG, "exoplayer created.")
-        dataSourceFactory =  DefaultDataSourceFactory(myContext,
+        dataSourceFactory = DefaultDataSourceFactory(myContext,
                 Util.getUserAgent(myContext, "app_mp3"))
         exoPlayer?.playWhenReady = true
 
@@ -71,20 +81,26 @@ class MyExoPlayer {
 
     }
 
-
-
-    fun getCurrentPos(): Int {
-        return (exoPlayer?.currentPosition?.toInt() as Int)
+    fun getDuration(): Int {
+        return exoPlayer?.duration?.toInt() as Int / 1000
     }
 
-    fun setNewSource(strUri: String) {
+    fun getCurrentPos(): Int {
+        return exoPlayer?.currentPosition?.toInt() as Int / 1000
+    }
+
+    fun setNewSource(uri: Uri) {
+
+        Log.i("setNewSource", "with \"${uri}\"")
         exoPlayer?.playWhenReady = true
         mediaSource = ExtractorMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(Uri.parse(strUri))
+                .createMediaSource(uri) /// Uri.parse("/storage/emulated/0/Music/MP3DOWNLOADS/halo.mp3")
         exoPlayer?.prepare(mediaSource)
-        Thread.sleep(5000)
+        //  Thread.sleep(5000)
         status = 1
-        playerEventListener?.OnSetNewDataSource{}
+
+        Thread.sleep(1000)
+        playerEventListener?.OnSetNewDataSource {}
 
         if (handler == null) {
             handler = Handler()
@@ -93,8 +109,9 @@ class MyExoPlayer {
 
     }
 
-    fun seekTo(positionMS: Long) {
-        exoPlayer?.seekTo(positionMS)
+    fun seekTo(positionSek: Long) {
+        exoPlayer?.seekTo(positionSek * 1000)
+        Log.i("pos after seeking", "${getCurrentPos()} / $positionSek")
         if (status == 0)
             toggle()
 

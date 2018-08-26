@@ -12,7 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.a18mas.mp3front.helper.MyEventListener
 
-import com.example.a18mas.mp3front.models.SearchResult
+import com.example.a18mas.mp3front.data.model.SearchResult
 import com.example.a18mas.mp3front.R
 
 

@@ -1,6 +1,6 @@
 package com.example.a18mas.mp3front.helper
 
-import com.example.a18mas.mp3front.models.SearchResult
+import com.example.a18mas.mp3front.data.model.SearchResult
 
 
 interface MyEventListener {
@@ -13,6 +13,11 @@ interface MyEventListener {
 
 }
 
+interface MyDownloadListener {
+    fun OnDownloadSuccess(searchResult: SearchResult, function: () -> Unit)
+    fun OnDownloadFailed(searchResult: SearchResult, function: () -> Unit)
+
+}
 
 interface MyHttpClientListener {
 

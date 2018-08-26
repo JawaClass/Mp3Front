@@ -7,6 +7,8 @@ androidExtensions {
     experimental = true
 }
 
+apply plugin: 'kotlin-kapt'
+
 android {
     compileSdkVersion 28
     defaultConfig {
@@ -56,6 +58,15 @@ dependencies {
     implementation 'com.github.kittinunf.fuel:fuel-forge:+' //for Forge support
     //
     implementation 'com.google.android.exoplayer:exoplayer:+'
+
+    def lifecycle_version = "1.0.0"
+    //implementation "android.arch.persistence.room:runtime:1.0.0"
+    //kapt "android.arch.persistence.room:compiler:1.0.0"
+
+
+    // room persistence dependency
+    implementation "android.arch.persistence.room:runtime:+"
+    kapt "android.arch.persistence.room:compiler:+"
     /* fix error
     https://stackoverflow.com/questions/34353220/android-studio-please-select-android-sdk/50000408#50000408
     */

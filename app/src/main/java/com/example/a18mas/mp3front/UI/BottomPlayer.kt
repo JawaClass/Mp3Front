@@ -16,7 +16,7 @@ import android.widget.SeekBar
 import android.widget.ToggleButton
 import com.example.a18mas.mp3front.MyExoPlayer
 import com.example.a18mas.mp3front.helper.PlayerEventListener
-import com.example.a18mas.mp3front.helper.currentMeta
+//  import com.example.a18mas.mp3front.helper.currentMeta
 import com.example.a18mas.mp3front.helper.playerImpl
 import kotlinx.android.synthetic.main.fragment_bottom_player.*
 
@@ -49,11 +49,11 @@ class BottomPlayer : Fragment(), View.OnClickListener, SeekBar.OnSeekBarChangeLi
     }
 
     override fun OnSetNewDataSource(function: () -> Unit) {
-        Log.i(TAG, "EVENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        Log.i(TAG, "OnSetNewDataSource max-progress = ${playerImpl?.getDuration() as Int}")
 
-        Log.i(TAG, "set max = ${currentMeta?.duration_seconds as Int * 1000}")
+        /// Log.i(TAG, "set max = ${currentMeta?.duration_seconds as Int * 1000}")
 
-        progress?.max = currentMeta?.duration_seconds as Int * 1000
+        progress?.max = playerImpl?.getDuration() as Int //  currentMeta?.duration_seconds as Int * 1000
     }
 
     private var handler: Handler? = null
@@ -75,6 +75,7 @@ class BottomPlayer : Fragment(), View.OnClickListener, SeekBar.OnSeekBarChangeLi
     }
 
     fun seekTo(positionMS: Long) {
+        Log.i("sekkTo", "positionMS: ${positionMS}")
         playerImpl?.seekTo(positionMS)
     }
 
@@ -106,7 +107,7 @@ class BottomPlayer : Fragment(), View.OnClickListener, SeekBar.OnSeekBarChangeLi
                               savedInstanceState: Bundle?): View {
 
 
-        Log.i(TAG, "on create view")
+        Log.i(TAG, "BottomPlayer: on create view")
         var view = inflater.inflate(R.layout.fragment_bottom_player, container, false)
         btn = view.findViewById(R.id.btn_toggle_play_pause) as ToggleButton
         btn?.setOnClickListener(this)
@@ -130,6 +131,10 @@ class BottomPlayer : Fragment(), View.OnClickListener, SeekBar.OnSeekBarChangeLi
     val syncProgressBar = object : Runnable {
         override fun run() {
             myActivity?.runOnUiThread {
+                //  Log.i("SYNC", "stat ${playerImpl?.status} ,  ${playerImpl?.getCurrentPos()}/${playerImpl?.getDuration()} ||  ${progress?.progress}/${progress?.max}")
+                //  progress?.progress = playerImpl?.getCurrentPos() as Int
+                progress?.max = playerImpl?.getDuration() as Int
+
                 if (playerImpl?.status == 1)
                     progress?.progress = playerImpl?.getCurrentPos() as Int
             }

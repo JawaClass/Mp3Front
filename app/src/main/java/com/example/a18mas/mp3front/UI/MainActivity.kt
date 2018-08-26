@@ -12,8 +12,14 @@ import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
 import com.example.a18mas.mp3front.R
 import com.example.a18mas.mp3front.helper.*
-import com.example.a18mas.mp3front.models.SearchResult
+import com.example.a18mas.mp3front.data.model.SearchResult
 import kotlinx.android.synthetic.main.activity_main.*
+import android.content.Intent
+import com.example.a18mas.mp3front.MyExoPlayer
+import com.example.a18mas.mp3front.data.AppDataManager
+import com.example.a18mas.mp3front.data.AppDatabase
+import com.example.a18mas.mp3front.data.SearchResultDAO
+import com.example.a18mas.mp3front.data.model.SearchResult_Table
 
 
 var myContext: Context? = null
@@ -24,7 +30,37 @@ class MainActivity : AppCompatActivity(),
         SearchView.OnQueryTextListener,
         MyEventListener,
         MyHttpClientListener,
-        ItemFragment.OnListFragmentInteractionListener {
+        ItemFragment.OnListFragmentInteractionListener, MyDownloadListener {
+    override fun OnDownloadSuccess(searchResult: SearchResult, function: () -> Unit) {
+        Log.i(TAG, "OnDownloadSuccess")
+
+        var dbManager: AppDataManager = AppDataManager.getAppDataManager()
+        var db: AppDatabase = AppDatabase.getDatabase()
+        var searchResultDAO: SearchResultDAO = db.searchResultDao()
+
+        dbManager.saveSearchResult(searchResult.getTable())
+
+/*
+        var srt = SearchResult_Table("borutoots", "boruto", "120",
+                102, "120", "test",
+                "test", "test", "test",
+                "19950909")
+        searchResultDAO.insertAll(srt)
+*/
+        var entries = searchResultDAO.all
+
+        Log.i(TAG, "ENTRIES: ${entries.toString()}")
+
+        entries.forEach {
+            Log.i(TAG, "entry: ${it.toString()}")
+
+        }
+
+    }
+
+    override fun OnDownloadFailed(searchResult: SearchResult, function: () -> Unit) {
+        Log.i(TAG, "OnDownloadFailed ${searchResult.title}")
+    }
 
 
     override fun onListFragmentInteraction(item: SearchResult?) {
@@ -39,7 +75,8 @@ class MainActivity : AppCompatActivity(),
 
 
     override fun OnSetNewDataSource(function: () -> Unit) {
-        ///Log.i(TAG, "OnSetNewDataSource")
+        Log.i(TAG, "Main_actvity: OnSetNewDataSource")
+
     }
 
 
@@ -55,22 +92,33 @@ class MainActivity : AppCompatActivity(),
     private var TAG = "MAIN-ACTIVITY"
     private var searchView: SearchView? = null
 
+    private val TAG_ITEM_FRAGMENT = "ITEM_FRAGMENT"
+    private val TAG_MAIN_FRAGMENT = "MAIN_FRAGMENT"
+    private val TAG_BOTTOM_FRAGMENT = "BOTTOM_FRAGMENT"
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+
+    fun openWith(intent: Intent) {
+        val action = intent.action
+        val type = intent.type
+
+        Log.i("MAIN", "action \"$action\"")
+        Log.i("MAIN", "type \"$type\"")
+        Log.i("MAIN", "data \"${intent.data}\"")
+        Log.i("MAIN", "dataString \"${intent.dataString}\"")
+
+
+        Log.i("MAIN", "intent \"$intent\"")
+        playLocalMP3(intent.data)
+
+    }
+
+    private fun init() {
+
+
         setSupportActionBar(toolbar)
         myContext = this
+        setMyContext(this)
         myActivity = this
-
-        // Configure the search info and add any event listeners...
-
-        /// for child activities....
-        // my_child_toolbar is defined in the layout file
-        ///setSupportActionBar(findViewById(R.id.my_child_toolbar))
-        // Get a support ActionBar corresponding to this toolbar and enable the Up button
-        //supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
 
         fab.setOnClickListener { view ->
             view?.makeSnackbarMessage("make message!!!!!!!")
@@ -85,25 +133,37 @@ class MainActivity : AppCompatActivity(),
             // However, if we're being restored from a previous state,
             // then we don't need to do anything and should return or else
             // we could end up with overlapping fragments.
-            if (savedInstanceState != null) {
-                return
-            }
+
 
             // Create a new Fragment to be placed in the activity layout
             bottomPlayer_Fragment = BottomPlayer()
-
-            // In case this activity was started with special instructions from an
-            // Intent, pass the Intent's extras to the fragment as arguments
             bottomPlayer_Fragment?.setArguments(intent.extras)
 
-            // Add the fragment to the 'fragment_container' FrameLayout
-            supportFragmentManager.beginTransaction()
-                    .add(R.id.fragment_container_bottom, bottomPlayer_Fragment as BottomPlayer).commit()
+            replaceFragment(R.id.fragment_container_bottom, bottomPlayer_Fragment!!, TAG_BOTTOM_FRAGMENT)
 
             main_Fragment = MainActivityFragment()
-            supportFragmentManager.beginTransaction()
-                    .add(R.id.fragment_container_center, main_Fragment as MainActivityFragment).commit()
+            replaceFragment(R.id.fragment_container_center, main_Fragment!!, TAG_MAIN_FRAGMENT)
         }
+        MyExoPlayer()
+        //  open with...
+        if (intent.data != null) {
+            /// Thread.sleep(5000)
+            openWith(intent)
+        }
+
+
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        Log.i("MAIN", "ON_CREATE.")
+
+        if (savedInstanceState != null) {
+            return
+        } else
+            init()
 
 
     }
@@ -128,24 +188,33 @@ class MainActivity : AppCompatActivity(),
 
                 item_Fragment = ItemFragment()
                 val args = Bundle()
-
                 args.putParcelableArray("init-data", data)
-                item_Fragment?.arguments = args
-                val transaction = supportFragmentManager.beginTransaction()
-                // Replace whatever is in the fragment_container view with this fragment,
-                // and add the transaction to the back stack so the user can navigate back
-                transaction?.replace(R.id.fragment_container_center, item_Fragment as ItemFragment)
-                transaction?.addToBackStack(null)
-                // Commit the transaction
-                Log.i(TAG, "commit")
 
-                transaction?.commit()
+                item_Fragment?.arguments = args
+
+                replaceFragment(R.id.fragment_container_center, item_Fragment!!, TAG_ITEM_FRAGMENT)
+
             } else {
                 Log.i(TAG, "UPDATE...")
+                var fr = supportFragmentManager.findFragmentById(R.id.linearLayout)
+                if (fr == null || !fr?.isVisible) {
+                    replaceFragment(R.id.fragment_container_center, item_Fragment!!, TAG_ITEM_FRAGMENT)
+                }
+
                 item_Fragment?.update(data)
             }
-            // }
         })
+    }
+
+    fun replaceFragment(containerInt: Int, fragment: Fragment, TAG: String) {
+        supportFragmentManager.popBackStack()
+        supportFragmentManager.beginTransaction().replace(containerInt,
+                fragment, TAG).addToBackStack(TAG).commitAllowingStateLoss()
+
+        //supportFragmentManager.beginTransaction().replace(containerInt,
+        //              fragment, TAG).commitNowAllowingStateLoss()
+        Log.i(TAG, "replaceFragment")
+
     }
 
     /// handle query and start search result fragment
@@ -154,6 +223,8 @@ class MainActivity : AppCompatActivity(),
         if (httpClient == null) {
             httpClient = HttpClient()
             httpClient?.setOnDoneSuccess(this)
+            httpClient?.setOnDownloadSuccess(this)
+
 
         }
 
@@ -198,7 +269,7 @@ class MainActivity : AppCompatActivity(),
 
         R.id.action_home -> {
             supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container_center, main_Fragment as MainActivityFragment).commit()
+                    .replace(R.id.fragment_container_center, main_Fragment as MainActivityFragment, TAG_MAIN_FRAGMENT).commit()
             true
         }
 
